@@ -1,0 +1,16 @@
+{
+  "workspacePath": "C:\\work\\app",
+  "unrelatedWorkspacePath": "C:\\work\\nothing-here",
+  "malformedFile": "session-1.jsonl",
+  "sessions": [
+    {
+      "file": "session-1.jsonl",
+      "title": "Fix duplicate webhook charges",
+      "branch": "feat/webhook-retry",
+      "minEvents": 5,
+      "shellCommandContains": "git commit",
+      "editedFile": "src/webhooks/handler.ts",
+      "commitShortSha": "a1c9e42"
+    }
+  ]
+}

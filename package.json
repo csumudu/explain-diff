@@ -1,0 +1,177 @@
+{
+  "name": "explain-diff",
+  "displayName": "Explain Diff",
+  "description": "Plain-language, diagram-rich explanations of the commits Claude Code made, with the session's context.",
+  "version": "0.1.0",
+  "publisher": "local",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/csumudu/explain-diff.git"
+  },
+  "bugs": {
+    "url": "https://github.com/csumudu/explain-diff/issues"
+  },
+  "homepage": "https://github.com/csumudu/explain-diff#readme",
+  "keywords": [
+    "claude",
+    "claude-code",
+    "ai",
+    "agents",
+    "git",
+    "commit",
+    "explain",
+    "diff"
+  ],
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "main": "./dist/extension.js",
+  "scripts": {
+    "build": "node esbuild.mjs",
+    "watch": "node esbuild.mjs --watch",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "test:smoke": "pnpm run build && node test/smoke/makeFixture.mjs && vscode-test",
+    "package": "pnpm run build && vsce package --no-dependencies"
+  },
+  "dependencies": {
+    "mermaid": "^11.17.2",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "@types/vscode": "^1.90.0",
+    "@vscode/test-cli": "^0.0.15",
+    "@vscode/test-electron": "^3.1.0",
+    "@vscode/vsce": "^4.0.0",
+    "esbuild": "^0.28.2",
+    "happy-dom": "^20.14.5",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.3"
+  },
+  "activationEvents": [],
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "explainDiff",
+          "title": "Claude Commits",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "explainDiff": [
+        {
+          "id": "explainDiff.commits",
+          "name": "Claude Commits"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "explainDiff.refresh",
+        "title": "Refresh",
+        "icon": "$(refresh)",
+        "category": "Explain Diff"
+      },
+      {
+        "command": "explainDiff.filter",
+        "title": "Filter Commits",
+        "icon": "$(filter)",
+        "category": "Explain Diff"
+      },
+      {
+        "command": "explainDiff.openCommit",
+        "title": "Explain Commit",
+        "category": "Explain Diff"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "explainDiff.filter",
+          "when": "view == explainDiff.commits",
+          "group": "navigation@1"
+        },
+        {
+          "command": "explainDiff.refresh",
+          "when": "view == explainDiff.commits",
+          "group": "navigation@2"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "explainDiff.openCommit",
+          "when": "false"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Explain Diff",
+      "properties": {
+        "explainDiff.claudePath": {
+          "type": "string",
+          "default": "claude",
+          "description": "Path to the Claude Code CLI.",
+          "scope": "machine"
+        },
+        "explainDiff.timeoutSeconds": {
+          "type": "number",
+          "default": 180,
+          "minimum": 30,
+          "description": "Maximum time for one explanation or answer."
+        },
+        "explainDiff.model": {
+          "type": "string",
+          "default": "",
+          "description": "Model passed to claude --model. Empty uses the CLI default.",
+          "pattern": "^[\\w.:\\[\\]-]*$"
+        },
+        "explainDiff.briefTokenBudget": {
+          "type": "number",
+          "default": 30000,
+          "minimum": 2000,
+          "description": "Approximate size of the session context sent to Claude."
+        },
+        "explainDiff.maxDiffTabs": {
+          "type": "number",
+          "default": 20,
+          "minimum": 0,
+          "description": "Maximum number of per-file diff tabs opened for a commit."
+        },
+        "explainDiff.sessionSources": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "claude-code"
+            ],
+            "enumDescriptions": [
+              "Claude Code (~/.claude/projects)"
+            ]
+          },
+          "default": [
+            "claude-code"
+          ],
+          "scope": "machine",
+          "description": "Which agent harnesses to read sessions from."
+        },
+        "explainDiff.explainer": {
+          "type": "string",
+          "enum": [
+            "claude-code"
+          ],
+          "enumDescriptions": [
+            "Claude Code CLI (claude -p)"
+          ],
+          "default": "claude-code",
+          "scope": "machine",
+          "description": "Which agent writes explanations and chat answers."
+        }
+      }
+    }
+  },
+  "packageManager": "pnpm@12.4.2"
+}

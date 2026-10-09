@@ -1,0 +1,25 @@
+name: New harness support
+description: Propose (or claim) support for another coding-agent harness
+labels: [harness]
+body:
+  - type: input
+    id: name
+    attributes: { label: Harness, placeholder: "Codex CLI" }
+    validations: { required: true }
+  - type: textarea
+    id: storage
+    attributes: { label: Where are sessions stored?, description: "Path pattern per OS and how a session maps to a project folder." }
+    validations: { required: true }
+  - type: textarea
+    id: format
+    attributes: { label: Session format, description: "File format, and how prompts, replies, tool calls (shell commands, file edits) and timestamps are recorded. A small redacted sample helps." }
+    validations: { required: true }
+  - type: input
+    id: trailer
+    attributes: { label: Commit trailer, description: "Does the agent sign its commits? e.g. Co-Authored-By: …" }
+  - type: dropdown
+    id: explainer
+    attributes: { label: Can it also act as an explainer?, options: ["No / not sure", "Yes, it has a non-interactive read-only mode"] }
+  - type: checkboxes
+    id: claim
+    attributes: { label: Contribution, options: [{ label: "I plan to open a PR for this" }] }

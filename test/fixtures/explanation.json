@@ -1,0 +1,33 @@
+{
+  "summary": "Payment providers sometimes send the same event twice. Now the app remembers handled events and skips repeats, so a customer is charged once.",
+  "why": {
+    "inferred": false,
+    "userQuotes": [{ "text": "Customers got charged twice. Find out why and fix it.", "time": "14:02" }],
+    "narrative": "The webhook handler processed every event, even repeats.",
+    "decisions": [
+      { "choice": "Store handled event IDs in the database", "kind": "chosen", "reason": "Survives restarts and works across servers." },
+      { "choice": "In-memory cache", "kind": "rejected", "reason": "Forgets everything on restart." }
+    ],
+    "timelineMermaid": "timeline\n  14:02 : You report double charges\n  14:35 : This commit"
+  },
+  "changes": [
+    {
+      "title": "The app now remembers which events it has handled",
+      "before": "Every event was processed, even a repeat.",
+      "after": "The handler saves the event ID first and skips repeats.",
+      "files": [{ "path": "src/webhooks/handler.ts", "line": 31, "added": 22, "removed": 6 }]
+    }
+  ],
+  "howItWorks": {
+    "narrative": "A new ID goes on to charge; a repeat is acknowledged and skipped. See `src/webhooks/handler.ts:31`.",
+    "diagramMermaid": "sequenceDiagram\n  Provider->>Handler: event\n  Handler->>DB: save ID\n  Handler-->>Provider: 200 OK"
+  },
+  "ripple": {
+    "diagramMermaid": "flowchart LR\n  H[handleWebhook] --> R[routes/webhooks.ts]\n  H -.-> E[EventsPage.tsx]",
+    "verified": [{ "path": "src/routes/webhooks.ts", "line": 18, "role": "Exposes the handler", "impact": "Unchanged for callers" }],
+    "possiblyRelated": [{ "path": "src/admin/EventsPage.tsx", "reason": "Lists webhook events by name" }]
+  },
+  "expectations": { "effects": ["Customers are charged once per payment."], "howToVerify": ["Run `npm test -- webhooks`."] },
+  "watchOuts": [{ "kind": "migration", "text": "Run the new migration before deploying." }],
+  "glossary": [{ "term": "Webhook", "meaning": "A message another service sends when something happens." }]
+}
