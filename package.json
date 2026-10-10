@@ -3,7 +3,17 @@
   "displayName": "Explain Diff",
   "description": "Plain-language, diagram-rich explanations of the commits Claude Code made, with the session's context.",
   "version": "0.1.0",
-  "publisher": "local",
+  "publisher": "LKAppFactory",
+  "icon": "media/icon.png",
+  "categories": [
+    "AI",
+    "SCM Providers",
+    "Visualization"
+  ],
+  "galleryBanner": {
+    "color": "#D97757",
+    "theme": "dark"
+  },
   "license": "MIT",
   "repository": {
     "type": "git",
