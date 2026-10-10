@@ -19,7 +19,6 @@ export interface ExplainPanelDeps {
   explain: ExplainService;
   store: ExplanationStore;
   tabs: CommitTabs;
-  maxDiffTabs: () => number;
   openRef: (path: string, line?: number) => void;
   onCached: (sha: string) => void;
   openChat: (prefill?: string) => void;
@@ -89,7 +88,7 @@ export class ExplainPanel {
   }
 
   private showReady(stored: StoredExplanation) {
-    this.view = { kind: 'ready', header: this.header(stored), stored, files: this.ctx.files, maxDiffTabs: this.deps.maxDiffTabs(), failedDiagrams: this.failed };
+    this.view = { kind: 'ready', header: this.header(stored), stored, files: this.ctx.files, failedDiagrams: this.failed };
     this.render();
   }
 
@@ -156,7 +155,7 @@ export class ExplainPanel {
         return this.deps.openRef(m.path, m.line);
       case 'focusFile': {
         const file = this.ctx.files.find((f) => f.path === m.path);
-        if (file && !file.binary) await this.deps.tabs.focusFile(this.sha, c.shortSha, file);
+        if (file && !file.binary) await this.deps.tabs.openFile(this.sha, c.shortSha, file);
         return;
       }
       case 'openAllChanges':

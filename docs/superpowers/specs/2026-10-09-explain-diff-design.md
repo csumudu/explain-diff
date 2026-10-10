@@ -206,6 +206,13 @@ See the canvas. Summary:
 
 ### 8a. Commit tab set
 
+> **Update 2026-10-10:** diff tabs no longer open automatically. Selecting a commit opens only the explanation
+> (and the chat) and expands the commit in the sidebar, which lists its changed files (name, folder, status;
+> binary files marked). Clicking a file opens its diff as a **preview** tab, so the next file replaces it unless
+> pinned. `explainDiff.maxDiffTabs` and the overflow "Open all N changes" link were removed; the header's
+> Open all changes button remains. The diff-editor rules below (refs, titles, content provider, closing the
+> previous commit's tabs) still apply.
+
 - Tabs open in this order: explanation, then changed files in `git show --name-status` order.
 - Each file tab is VS Code's own diff editor (`vscode.diff`), read-only, comparing the file at `<sha>^`
   (left) with the file at `<sha>` (right). Both sides come from a `explain-diff:` content provider backed

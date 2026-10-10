@@ -20,12 +20,3 @@ export function diffTabFor(sha: string, shortSha: string, file: ChangedFile): Di
     title: `${name} · ${file.status} · ${shortSha}`,
   };
 }
-
-export function planDiffTabs(sha: string, shortSha: string, files: ChangedFile[], max: number) {
-  const text = files.filter((f) => !f.binary);
-  return {
-    tabs: text.slice(0, Math.max(0, max)).map((f) => diffTabFor(sha, shortSha, f)),
-    overflow: Math.max(0, text.length - Math.max(0, max)),
-    binary: files.filter((f) => f.binary).map((f) => f.path),
-  };
-}

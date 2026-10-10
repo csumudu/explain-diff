@@ -86,6 +86,11 @@
         "command": "explainDiff.openCommit",
         "title": "Explain Commit",
         "category": "Explain Diff"
+      },
+      {
+        "command": "explainDiff.openFile",
+        "title": "Open Diff",
+        "category": "Explain Diff"
       }
     ],
     "menus": {
@@ -104,6 +109,10 @@
       "commandPalette": [
         {
           "command": "explainDiff.openCommit",
+          "when": "false"
+        },
+        {
+          "command": "explainDiff.openFile",
           "when": "false"
         }
       ]
@@ -134,12 +143,6 @@
           "default": 30000,
           "minimum": 2000,
           "description": "Approximate size of the session context sent to Claude."
-        },
-        "explainDiff.maxDiffTabs": {
-          "type": "number",
-          "default": 20,
-          "minimum": 0,
-          "description": "Maximum number of per-file diff tabs opened for a commit."
         },
         "explainDiff.sessionSources": {
           "type": "array",

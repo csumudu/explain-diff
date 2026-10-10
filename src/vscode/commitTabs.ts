@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { GitService } from '../core/gitService';
-import { diffTabFor, planDiffTabs, type DiffTabSpec } from '../core/tabPlan';
+import { diffTabFor, type DiffTabSpec } from '../core/tabPlan';
 import type { ChangedFile } from '../core/types';
 
 export const DIFF_SCHEME = 'explain-diff';
@@ -23,22 +23,19 @@ export class GitContentProvider implements vscode.TextDocumentContentProvider {
 export class CommitTabs {
   constructor(private readonly repoRoot: string) {}
 
-  private async openSpec(sha: string, spec: DiffTabSpec, focus: boolean) {
+  private async openSpec(sha: string, spec: DiffTabSpec) {
     const left = gitUri(this.repoRoot, sha, spec.leftRef, spec.leftPath);
     const right = gitUri(this.repoRoot, sha, spec.rightRef, spec.rightPath);
     await vscode.commands.executeCommand('vscode.diff', left, right, spec.title, {
-      preview: false,
-      preserveFocus: !focus,
+      preview: true,
+      preserveFocus: false,
       viewColumn: vscode.ViewColumn.One,
     });
   }
 
-  async open(sha: string, shortSha: string, files: ChangedFile[], max: number): Promise<void> {
-    for (const spec of planDiffTabs(sha, shortSha, files, max).tabs) await this.openSpec(sha, spec, false);
-  }
-
-  async focusFile(sha: string, shortSha: string, file: ChangedFile): Promise<void> {
-    await this.openSpec(sha, diffTabFor(sha, shortSha, file), true);
+  /** Opens one file's diff as a preview tab: the next file opened replaces it unless the user pinned it. */
+  async openFile(sha: string, shortSha: string, file: ChangedFile): Promise<void> {
+    await this.openSpec(sha, diffTabFor(sha, shortSha, file));
   }
 
   async closeFor(sha: string): Promise<void> {

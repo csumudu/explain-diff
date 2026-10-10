@@ -1,4 +1,4 @@
-import type { LinkResult, LinkedCommit, SessionGroup } from './types';
+import type { ChangedFile, LinkResult, LinkedCommit, SessionGroup } from './types';
 
 export type CommitNode = {
   kind: 'commit'; id: string; label: string; description: string; tooltip: string;
@@ -7,6 +7,7 @@ export type CommitNode = {
 export type SessionNode = { kind: 'session'; id: string; label: string; description: string; tooltip: string; group: SessionGroup; children: CommitNode[] };
 export type OtherNode = { kind: 'other'; id: 'other'; label: string; description: string; children: CommitNode[] };
 export type RootNode = SessionNode | OtherNode;
+export type FileNode = { kind: 'file'; id: string; label: string; description: string; tooltip: string; sha: string; shortSha: string; file: ChangedFile };
 
 const fmt = (iso: string) =>
   new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
@@ -54,4 +55,42 @@ export function buildTree(link: LinkResult, cached: Set<string>, filter = '', so
     roots.push({ kind: 'other', id: 'other', label: 'Other agent commits', description: `no session transcript found · ${plural(others.length)}`, children: others.map((l) => commitNode(l, null, cached)) });
   }
   return roots;
+}
+
+export function fileNodes(sha: string, shortSha: string, files: ChangedFile[]): FileNode[] {
+  return files.map((f) => {
+    const slash = f.path.lastIndexOf('/');
+    const name = f.path.slice(slash + 1);
+    const dir = slash >= 0 ? f.path.slice(0, slash) : '';
+    const status = f.status === 'R' && f.oldPath ? `R ← ${f.oldPath}` : f.status;
+    return {
+      kind: 'file',
+      id: `file:${sha}:${f.path}`,
+      label: name,
+      description: [dir, status, f.binary ? 'binary' : ''].filter(Boolean).join(' · '),
+      tooltip: f.binary ? `${f.path}
+Binary file, no text diff` : `${f.path}
++${f.added ?? 0} −${f.removed ?? 0}`,
+      sha,
+      shortSha,
+      file: f,
+    };
+  });
+}
+
+/** Loads each commit's changed files once, on first expand. A failed load is not cached, so expanding again retries. */
+export class FileChildren {
+  private readonly cache = new Map<string, Promise<FileNode[]>>();
+
+  constructor(private readonly load: (sha: string) => Promise<ChangedFile[]>) {}
+
+  get(sha: string, shortSha: string): Promise<FileNode[]> {
+    let p = this.cache.get(sha);
+    if (!p) {
+      p = this.load(sha).then((files) => fileNodes(sha, shortSha, files));
+      this.cache.set(sha, p);
+      p.catch(() => this.cache.delete(sha));
+    }
+    return p;
+  }
 }

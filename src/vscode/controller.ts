@@ -15,7 +15,7 @@ export interface CommitContext {
 
 export interface ControllerHooks {
   onOpen?: (ctx: CommitContext) => void | Promise<void>;
-  afterTabs?: (ctx: CommitContext) => void | Promise<void>;
+  afterOpen?: (ctx: CommitContext) => void | Promise<void>;
   /** True while the explanation tab for the current commit is still open. */
   isShowing?: () => boolean;
   onClose?: (sha: string) => void | Promise<void>;
@@ -29,7 +29,7 @@ export class Controller {
     private readonly git: GitService,
     private readonly tabs: CommitTabs,
     private readonly repoRoot: string,
-    private readonly settings: () => { briefTokenBudget: number; maxDiffTabs: number },
+    private readonly settings: () => { briefTokenBudget: number },
     readonly hooks: ControllerHooks = {},
   ) {}
 
@@ -46,10 +46,9 @@ export class Controller {
     const { linked, group } = node;
     const sha = linked.commit.sha;
     if (this.currentSha === sha && this.current) {
-      // Same commit again: bring its tabs forward instead of opening a second set.
+      // Same commit again: bring its explanation forward instead of opening a second one.
       if (!this.hooks.isShowing?.()) await this.hooks.onOpen?.(this.current);
-      await this.tabs.open(sha, linked.commit.shortSha, this.current.files, this.settings().maxDiffTabs);
-      await this.hooks.afterTabs?.(this.current);
+      await this.hooks.afterOpen?.(this.current);
       return;
     }
     if (this.currentSha) await this.close(this.currentSha);
@@ -70,8 +69,7 @@ export class Controller {
     this.currentSha = sha;
     this.current = ctx;
     await this.hooks.onOpen?.(ctx);
-    await this.tabs.open(sha, linked.commit.shortSha, files, this.settings().maxDiffTabs);
-    await this.hooks.afterTabs?.(ctx);
+    await this.hooks.afterOpen?.(ctx);
   }
 
   async close(sha: string): Promise<void> {

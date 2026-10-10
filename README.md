@@ -13,7 +13,7 @@ Explain Diff is a VS Code and Cursor extension. It lists the commits an AI codin
 7. **Watch-outs:** risks, edge cases and follow-ups
 8. **Glossary:** every technical term in simple words
 
-The explanation opens as the first tab, followed by one diff tab per changed file. A **chat panel** beside it lets you ask follow-up questions, and the history is kept per commit. Diagrams can be maximized with zoom and pan.
+The explanation opens in a tab, and the commit expands in the sidebar to list its changed files: click one to see its diff. A **chat panel** beside it lets you ask follow-up questions, and the history is kept per commit. Diagrams can be maximized with zoom and pan.
 
 ![Explain Diff](docs/media/screenshot.png)
 
@@ -43,7 +43,7 @@ Reload the window after installing or updating.
 
 1. Open a repository where you have used a supported agent.
 2. Open the **Claude Commits** view in the activity bar.
-3. Click a commit. The explanation and diff tabs open, and the chat appears beside them.
+3. Click a commit. The explanation opens with the chat beside it, and the commit expands to list its changed files. Click a file to open its diff.
 4. Use **Ask** on any section to ask about it, **⤢** on a diagram to maximize it, and **Export Markdown** to save the explanation together with the conversation.
 
 ## Settings
@@ -56,7 +56,6 @@ Reload the window after installing or updating.
 | `explainDiff.model` | (CLI default) | Model passed to the explainer |
 | `explainDiff.timeoutSeconds` | `180` | Time limit for one explanation or answer |
 | `explainDiff.briefTokenBudget` | `30000` | Size of the session context sent to the explainer |
-| `explainDiff.maxDiffTabs` | `20` | Maximum per-file diff tabs per commit |
 
 ## Privacy
 
