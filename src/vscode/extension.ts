@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { homedir } from 'node:os';
+import { join } from 'node:path';
 import { collectSessions } from '../core/sessionCollector';
 import { createExplainer, createSources } from '../harnesses/registry';
 import { linkCommits } from '../core/commitLinker';
@@ -13,7 +14,7 @@ import { CommitTabs, DIFF_SCHEME, GitContentProvider } from './commitTabs';
 import { Controller } from './controller';
 import { ExplainPanel } from './explainPanel';
 import { ChatPanel } from './chatPanel';
-import type { CommitNode } from '../core/treeModel';
+import { FileChildren, type CommitNode, type FileNode } from '../core/treeModel';
 
 export interface ExplainDiffApi {
   tree: CommitsTreeProvider;
@@ -30,7 +31,6 @@ export const config = () => {
     timeoutMs: c.get<number>('timeoutSeconds', 180) * 1000,
     model: c.get<string>('model', '') || undefined,
     briefTokenBudget: c.get<number>('briefTokenBudget', 30000),
-    maxDiffTabs: c.get<number>('maxDiffTabs', 20),
     sessionSources: c.get<unknown>('sessionSources'),
     explainer: c.get<unknown>('explainer'),
   };
@@ -38,13 +38,12 @@ export const config = () => {
 
 export async function activate(context: vscode.ExtensionContext): Promise<ExplainDiffApi> {
   const folder = vscode.workspace.workspaceFolders?.[0];
-  const tree = new CommitsTreeProvider();
-  const view = vscode.window.createTreeView('explainDiff.commits', { treeDataProvider: tree, showCollapseAll: true });
-  context.subscriptions.push(view);
-
   const cwd = folder?.uri.fsPath ?? homedir();
   const git = new GitService(cwd);
   const repoRoot = (await git.repoRoot()) ?? cwd;
+  const tree = new CommitsTreeProvider({ files: new FileChildren((sha) => git.changedFiles(sha)), fileUri: (p) => vscode.Uri.file(join(repoRoot, p)) });
+  const view = vscode.window.createTreeView('explainDiff.commits', { treeDataProvider: tree, showCollapseAll: true });
+  context.subscriptions.push(view);
   const store = new ExplanationStore(repoStoreDir(context.globalStorageUri.fsPath, repoRoot));
   const settings = (k: string) => vscode.workspace.getConfiguration('explainDiff').get(k);
   let explainer = createExplainer(config().explainer, { settings });
@@ -61,7 +60,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<Explai
       explainPanel = new ExplainPanel(ctx, {
         extensionUri: context.extensionUri, explain, store, tabs,
         explainer: { get displayName() { return explainer.displayName; }, get setup() { return explainer.setup; } },
-        maxDiffTabs: () => config().maxDiffTabs,
         openRef: (p, l) => void controller.openRef(p, l),
         onCached: (sha) => {
           tree.markCached(sha);
@@ -76,7 +74,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Explai
       void panel.load();
     },
     isShowing: () => !!explainPanel,
-    afterTabs: (ctx) => {
+    afterOpen: (ctx) => {
       explainPanel?.reveal();
       chat.show(ctx, { focus: false });
     },
@@ -125,7 +123,18 @@ export async function activate(context: vscode.ExtensionContext): Promise<Explai
       const q = await vscode.window.showInputBox({ prompt: 'Filter by commit message, SHA, session title or edited file', value: tree.filterText });
       if (q !== undefined) tree.setFilter(q);
     }),
-    vscode.commands.registerCommand('explainDiff.openCommit', (node: CommitNode) => controller.openCommit(node)),
+    vscode.commands.registerCommand('explainDiff.openCommit', async (node: CommitNode) => {
+      await controller.openCommit(node);
+      // Expand the clicked commit so its changed files are visible; best effort if the tree has been rebuilt meanwhile.
+      if (view.visible) await Promise.resolve(view.reveal(node, { expand: true, select: true, focus: false })).catch(() => {});
+    }),
+    vscode.commands.registerCommand('explainDiff.openFile', async (node: FileNode) => {
+      if (node.file.binary) {
+        vscode.window.showInformationMessage(`${node.file.path} is a binary file, so there is no text diff to show.`);
+        return;
+      }
+      await tabs.openFile(node.sha, node.shortSha, node.file);
+    }),
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (['explainDiff.claudePath', 'explainDiff.explainer', 'explainDiff.sessionSources'].some((k) => e.affectsConfiguration(k))) {
         explainer = createExplainer(config().explainer, { settings });

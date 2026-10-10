@@ -6,9 +6,9 @@ import type { StoredExplanation } from '../../src/core/types';
 
 const header: HeaderInfo = { explainerName: 'Claude Code', shortSha: 'a1c9e42', subject: 'Make <b>handler</b> idempotent', branch: 'feat/x', date: '2026-10-08T14:35:00Z', added: 48, removed: 12, fileCount: 4, sessionTitle: 'Fix', generatedAt: '2026-10-08T15:10:00Z', hasTranscript: true };
 const stored = (e: unknown = fixture): StoredExplanation => ({ sha: 'abc', promptVersion: PROMPT_VERSION, generatedAt: 'g', explainerSessionId: 's', inferred: false, explanation: e as Explanation, thread: [] });
-const ready = (e?: unknown, extra: Partial<{ failedDiagrams: Record<string, string>; maxDiffTabs: number }> = {}) =>
+const ready = (e?: unknown, extra: Partial<{ failedDiagrams: Record<string, string> }> = {}) =>
   renderExplainView({
-    kind: 'ready', header, stored: stored(e), maxDiffTabs: extra.maxDiffTabs ?? 20, failedDiagrams: extra.failedDiagrams ?? {},
+    kind: 'ready', header, stored: stored(e), failedDiagrams: extra.failedDiagrams ?? {},
     files: [{ status: 'M', path: 'src/webhooks/handler.ts', added: 22, removed: 6, binary: false }, { status: 'A', path: 'logo.png', added: null, removed: null, binary: true }],
   });
 
@@ -40,10 +40,6 @@ describe('renderExplainView ready', () => {
     expect(html).toContain('data-action="focusFile" data-path="src/webhooks/handler.ts"');
     expect(html).toContain('logo.png');
     expect(html).toContain('binary');
-  });
-  it('offers "Open all N changes" only above the tab limit', () => {
-    expect(html).not.toContain('Open all 1 changes');
-    expect(ready(undefined, { maxDiffTabs: 0 })).toContain('Open all 1 changes');
   });
   it('shows a failed diagram with its error and a retry button', () => {
     const h = ready(undefined, { failedDiagrams: { 'ripple.diagramMermaid': 'Parse error on line 2' } });
@@ -126,13 +122,13 @@ describe('chat rendering', () => {
 describe('diagram maximize button', () => {
   it('rendered diagrams carry a hidden Maximize button that the webview reveals after rendering', () => {
     const html = renderExplainView({
-      kind: 'ready', header, stored: stored(), maxDiffTabs: 20, failedDiagrams: {}, files: [],
+      kind: 'ready', header, stored: stored(), failedDiagrams: {}, files: [],
     });
     expect(html).toContain('<button class="maximize" data-action="maximizeDiagram" aria-label="Maximize diagram" hidden>');
   });
   it('failed diagrams have no Maximize button', () => {
     const html = renderExplainView({
-      kind: 'ready', header, stored: stored(), maxDiffTabs: 20, files: [],
+      kind: 'ready', header, stored: stored(), files: [],
       failedDiagrams: { 'why.timelineMermaid': 'e', 'howItWorks.diagramMermaid': 'e', 'ripple.diagramMermaid': 'e' },
     });
     expect(html).not.toContain('data-action="maximizeDiagram"');
@@ -145,7 +141,7 @@ describe('explainer-neutral copy', () => {
   it('names the explainer in loading, footer and the missing-tool state', () => {
     const h = { ...header, explainerName: 'Some Agent' };
     expect(renderExplainView({ kind: 'loading', header: h, steps: [{ label: 'Some Agent is exploring the code', state: 'active' }], log: [] })).toContain('Some Agent is exploring the code');
-    expect(renderExplainView({ kind: 'ready', header: h, stored: stored(), files: [], maxDiffTabs: 20, failedDiagrams: {} })).toContain('Written by Some Agent');
+    expect(renderExplainView({ kind: 'ready', header: h, stored: stored(), files: [], failedDiagrams: {} })).toContain('Written by Some Agent');
     const missing = renderExplainView({ kind: 'error', header: h, variant: 'cliMissing', message: 'not found', setup: { message: 'Install Some Agent.', docsUrl: 'https://example.com/docs' } });
     expect(missing).toContain('Some Agent is needed to write explanations');
     expect(missing).toContain('Install Some Agent.');

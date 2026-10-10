@@ -24,7 +24,7 @@ Press **F5** in VS Code to run the extension in a development window.
 | `src/core/` | Harness-neutral logic: git, commit linking, session brief, prompts, explanation schema, cache, chat |
 | `src/harnesses/` | **Adapters.** `types.ts` (the contract), `registry.ts`, and one folder per harness |
 | `src/webview/` | HTML rendering (pure, unit-tested) and the browser scripts for the explanation and chat panels |
-| `src/vscode/` | VS Code glue: sidebar, tab set, panels, activation |
+| `src/vscode/` | VS Code glue: sidebar, diff tabs, panels, activation |
 | `test/harnesses/contract/` | The shared test suite every session source must pass |
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for the data flow.

@@ -31,7 +31,7 @@ export interface HeaderInfo {
 export type ExplainView =
   | { kind: 'loading'; header: HeaderInfo; steps: { label: string; state: 'done' | 'active' | 'todo' }[]; log: string[] }
   | { kind: 'error'; header: HeaderInfo; variant: 'cliMissing' | 'failed'; message: string; details?: string; setup?: { message: string; docsUrl: string } }
-  | { kind: 'ready'; header: HeaderInfo; stored: StoredExplanation; files: ChangedFile[]; maxDiffTabs: number; failedDiagrams: Record<string, string> };
+  | { kind: 'ready'; header: HeaderInfo; stored: StoredExplanation; files: ChangedFile[]; failedDiagrams: Record<string, string> };
 
 export const SECTION_TITLES = ['In one breath', 'Why we did this', 'What changed', 'How it works now', 'Ripple map', 'What to expect', 'Watch-outs', 'Glossary'];
 
@@ -121,10 +121,8 @@ export function renderExplainView(v: ExplainView): string {
     )
     .join('');
   const binary = v.files.filter((f) => f.binary);
-  const textFiles = v.files.filter((f) => !f.binary);
   const binaryNote = binary.length ? `<p class="muted">Binary files (no diff tab): ${binary.map((f) => `<code>${esc(f.path)}</code> binary`).join(', ')}</p>` : '';
-  const overflow = textFiles.length > v.maxDiffTabs ? `<button class="primary" data-action="openAllChanges">Open all ${textFiles.length} changes</button>` : '';
-  const s3 = `${changes}${binaryNote}${overflow}`;
+  const s3 = `${changes}${binaryNote}`;
 
   const s4 = `<p>${rich(e.howItWorks.narrative)}</p>${diagram('howItWorks.diagramMermaid', e.howItWorks.diagramMermaid, 'How it works after this commit', fd['howItWorks.diagramMermaid'])}`;
 

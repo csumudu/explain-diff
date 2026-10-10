@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { buildTree } from '../../src/core/treeModel';
-import type { CommitInfo, LinkResult, Session } from '../../src/core/types';
+import { buildTree, fileNodes, FileChildren } from '../../src/core/treeModel';
+import type { ChangedFile, CommitInfo, LinkResult, Session } from '../../src/core/types';
 
 const commit = (sha: string, subject: string, date: string): CommitInfo => ({ sha, shortSha: sha.slice(0, 7), subject, body: '', authorDate: date, agentCoAuthored: true });
 const session = (id: string, title: string, start: string, edited: string[] = []): Session => ({ id, sourceId: 'claude-code', title, branch: 'feat/x', start, end: start, events: [], editedFiles: edited, filePath: `/${id}.jsonl` });
@@ -51,5 +51,49 @@ describe('source names', () => {
     const c = commit('ddddddd111', 'X', '2026-10-08T12:00:00Z');
     const t = buildTree({ groups: [{ session: a, commits: [{ commit: c, eventIndex: 0, via: 'transcript' }] }, { session: b, commits: [{ commit: { ...c, sha: 'eeeeeee111', shortSha: 'eeeeeee' }, eventIndex: 0, via: 'transcript' }] }], other: [] }, new Set());
     expect(new Set(t.map((n) => n.id)).size).toBe(2);
+  });
+});
+
+const cf = (status: ChangedFile['status'], path: string, extra: Partial<ChangedFile> = {}): ChangedFile => ({ status, path, added: 1, removed: 1, binary: false, ...extra });
+
+describe('fileNodes', () => {
+  it('labels each changed file with its name, folder and status', () => {
+    const n = fileNodes('a1c9e42fff', 'a1c9e42', [
+      cf('M', 'src/webhooks/handler.ts'),
+      cf('A', 'README.md'),
+      cf('R', 'src/new.ts', { oldPath: 'src/old.ts' }),
+      cf('A', 'img/logo.png', { binary: true, added: null, removed: null }),
+    ]);
+    expect(n.map((x) => [x.label, x.description])).toEqual([
+      ['handler.ts', 'src/webhooks · M'],
+      ['README.md', 'A'],
+      ['new.ts', 'src · R ← src/old.ts'],
+      ['logo.png', 'img · A · binary'],
+    ]);
+    expect(n.every((x) => x.kind === 'file' && x.sha === 'a1c9e42fff' && x.shortSha === 'a1c9e42')).toBe(true);
+    expect(n[0].file.path).toBe('src/webhooks/handler.ts');
+  });
+  it('gives every file a unique id per commit', () => {
+    const a = fileNodes('aaa', 'aaa', [cf('M', 'x.ts'), cf('M', 'y/x.ts')]);
+    const b = fileNodes('bbb', 'bbb', [cf('M', 'x.ts')]);
+    expect(new Set([...a, ...b].map((x) => x.id)).size).toBe(3);
+  });
+});
+
+describe('FileChildren', () => {
+  it('loads the files of a commit once and reuses them', async () => {
+    let calls = 0;
+    const fc = new FileChildren(async () => { calls++; return [cf('M', 'a.ts')]; });
+    const first = await fc.get('sha1', 'sha1');
+    const second = await fc.get('sha1', 'sha1');
+    expect(first.map((n) => n.label)).toEqual(['a.ts']);
+    expect(second).toBe(first);
+    expect(calls).toBe(1);
+  });
+  it('retries after a failed load instead of caching the failure', async () => {
+    let calls = 0;
+    const fc = new FileChildren(async () => { calls++; if (calls === 1) throw new Error('git busy'); return [cf('M', 'a.ts')]; });
+    await expect(fc.get('sha1', 'sha1')).rejects.toThrow('git busy');
+    expect((await fc.get('sha1', 'sha1')).length).toBe(1);
   });
 });
